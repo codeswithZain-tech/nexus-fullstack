@@ -6,6 +6,8 @@ export function useVideoCall(roomId: string, userName: string) {
   const socketRef = useRef<Socket | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const peerSocketRef = useRef<string | null>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [connected, setConnected] = useState(false);
 
@@ -20,25 +22,40 @@ export function useVideoCall(roomId: string, userName: string) {
     });
     pcRef.current = pc;
 
+    let mediaReady = false;
+
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: true })
       .then((stream) => {
         localStreamRef.current = stream;
+        setLocalStream(stream);
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+        mediaReady = true;
+        // If a peer already joined while media was loading, create offer now
+        if (peerSocketRef.current) {
+          createOffer();
+        }
       })
       .catch((err) => console.error('Could not access camera/microphone', err));
 
     pc.ontrack = (event) => setRemoteStream(event.streams[0]);
 
     pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit('ice-candidate', { candidate: event.candidate, to: roomId });
+      if (event.candidate && peerSocketRef.current) {
+        socket.emit('ice-candidate', { candidate: event.candidate, to: peerSocketRef.current });
       }
     };
 
     socket.emit('join-room', { roomId, userName });
 
+    async function createOffer() {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('offer', { offer, to: peerSocketRef.current, roomId });
+    }
+
     socket.on('offer', async ({ offer, from }) => {
+      peerSocketRef.current = from;
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -60,9 +77,10 @@ export function useVideoCall(roomId: string, userName: string) {
     });
 
     socket.on('user-joined', async ({ socketId }) => {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit('offer', { offer, to: socketId, roomId });
+      peerSocketRef.current = socketId;
+      if (mediaReady) {
+        await createOffer();
+      }
     });
 
     return () => {
@@ -87,7 +105,7 @@ export function useVideoCall(roomId: string, userName: string) {
   };
 
   return {
-    localStream: localStreamRef.current,
+    localStream,
     remoteStream,
     connected,
     toggleAudio,

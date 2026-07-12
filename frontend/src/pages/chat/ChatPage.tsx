@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Send, Phone, Video, Info, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
@@ -103,6 +103,10 @@ export const ChatPage: React.FC = () => {
     ? conversations.find((c) => c._id === userId)
     : null;
 
+  const callRoomId = userId && currentUser
+    ? [currentUser.id, userId].sort().join('--')
+    : '';
+
   if (!currentUser) return null;
 
   return (
@@ -168,8 +172,12 @@ export const ChatPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button variant="ghost" size="sm" className="rounded-full p-2"><Phone size={18} /></Button>
-                <Button variant="ghost" size="sm" className="rounded-full p-2"><Video size={18} /></Button>
+                <Link to={`/call/${callRoomId}`}>
+                  <Button variant="ghost" size="sm" className="rounded-full p-2"><Phone size={18} /></Button>
+                </Link>
+                <Link to={`/call/${callRoomId}`}>
+                  <Button variant="ghost" size="sm" className="rounded-full p-2"><Video size={18} /></Button>
+                </Link>
                 <Button variant="ghost" size="sm" className="rounded-full p-2"><Info size={18} /></Button>
               </div>
             </div>

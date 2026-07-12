@@ -67,7 +67,12 @@ export const MeetingsPage: React.FC = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await apiScheduleMeeting(form);
+      const payload = {
+        ...form,
+        startTime: new Date(form.startTime).toISOString(),
+        endTime: new Date(form.endTime).toISOString(),
+      };
+      await apiScheduleMeeting(payload);
       toast.success('Meeting scheduled');
       setForm({ participant: '', title: '', notes: '', startTime: '', endTime: '' });
       load();

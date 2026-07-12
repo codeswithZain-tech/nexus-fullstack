@@ -1,17 +1,52 @@
-import React from 'react';
-import { User, Lock, Bell, Globe, Palette, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Lock, Bell, Globe, Palette, CreditCard, ShieldCheck, Loader2 } from 'lucide-react';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Avatar } from '../../components/ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
+import { apiSendOtp, apiVerifyOtp } from '../../lib/api';
+import toast from 'react-hot-toast';
 
 export const SettingsPage: React.FC = () => {
   const { user } = useAuth();
-  
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [is2faEnabled, setIs2faEnabled] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   if (!user) return null;
-  
+
+  const handleEnable2FA = async () => {
+    setLoading(true);
+    try {
+      await apiSendOtp();
+      setOtpSent(true);
+      toast.success('OTP sent! Check the server console.');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpValue.trim()) return;
+    setLoading(true);
+    try {
+      await apiVerifyOtp(otpValue.trim());
+      setIs2faEnabled(true);
+      setOtpSent(false);
+      setOtpValue('');
+      toast.success('2FA enabled successfully!');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Invalid OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -137,10 +172,31 @@ export const SettingsPage: React.FC = () => {
                     <p className="text-sm text-gray-600">
                       Add an extra layer of security to your account
                     </p>
-                    <Badge variant="error" className="mt-1">Not Enabled</Badge>
+                    <Badge variant={is2faEnabled ? 'success' : 'error'} className="mt-1">
+                      {is2faEnabled ? 'Enabled' : 'Not Enabled'}
+                    </Badge>
                   </div>
-                  <Button variant="outline">Enable</Button>
+                  {!otpSent && !is2faEnabled && (
+                    <Button variant="outline" onClick={handleEnable2FA} disabled={loading}>
+                      {loading ? <Loader2 size={16} className="animate-spin mr-1" /> : <ShieldCheck size={16} className="mr-1" />}
+                      Enable
+                    </Button>
+                  )}
                 </div>
+                {otpSent && !is2faEnabled && (
+                  <div className="mt-4 flex items-end gap-2">
+                    <Input
+                      label="Enter OTP"
+                      value={otpValue}
+                      onChange={(e) => setOtpValue(e.target.value)}
+                      placeholder="6-digit code"
+                      maxLength={6}
+                    />
+                    <Button onClick={handleVerifyOtp} disabled={loading || !otpValue.trim()}>
+                      {loading ? <Loader2 size={16} className="animate-spin" /> : 'Verify'}
+                    </Button>
+                  </div>
+                )}
               </div>
               
               <div className="pt-6 border-t border-gray-200">

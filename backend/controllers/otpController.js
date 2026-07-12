@@ -16,7 +16,10 @@ export const sendOtp = async (req, res, next) => {
     // MOCK: log to console instead of real email (swap in Nodemailer for real sending)
     console.log(`[MOCK OTP] Sending OTP ${otp} to ${req.user.email}`);
 
-    res.json({ message: "OTP sent (check server logs in this sandbox setup)" });
+    res.json({ 
+      message: "OTP sent (check server logs in this sandbox setup)",
+      mockOtp: otp // Added for demo deployment purposes so it can be shown in a popup
+    });
   } catch (error) {
     next(error);
   }

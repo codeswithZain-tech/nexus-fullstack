@@ -68,3 +68,7 @@ export const apiSendMessage = (receiverId: string, content: string) => api.post(
 export const apiGetMessages = (userId: string) => api.get(`/messages/${userId}`);
 export const apiGetConversations = () => api.get('/messages/conversations');
 export const apiMarkAsRead = (userId: string) => api.put(`/messages/${userId}/read`);
+
+// ---- 2FA ----
+export const apiSendOtp = () => api.post('/auth/2fa/send');
+export const apiVerifyOtp = (otp: string) => api.post('/auth/2fa/verify', { otp });

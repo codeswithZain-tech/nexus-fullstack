@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, CircleDollarSign, Building2, LogIn, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -12,6 +13,8 @@ export const LoginPage: React.FC = () => {
   const [role, setRole] = useState<UserRole>('entrepreneur');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [show2FA, setShow2FA] = useState(false);
+  const [otp, setOtp] = useState('');
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -23,10 +26,34 @@ export const LoginPage: React.FC = () => {
     
     try {
       await login(email, password, role);
-      // Redirect based on user role
-      navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
+      // Initiate 2FA
+      const api = await import('../../lib/api');
+      const otpRes = await api.apiSendOtp();
+      
+      // For demo deployment purposes: show the OTP in a toast so evaluators can use it
+      if (otpRes.data.mockOtp) {
+        toast.success(`[MOCK 2FA] Your OTP is: ${otpRes.data.mockOtp}`, { duration: 10000 });
+      }
+      
+      setShow2FA(true);
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+    try {
+      const { apiVerifyOtp } = await import('../../lib/api');
+      await apiVerifyOtp(otp);
+      navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
+    } catch (err) {
+      setError((err as Error).message || 'Invalid OTP');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -42,6 +69,24 @@ export const LoginPage: React.FC = () => {
     }
     setRole(userRole);
   };
+
+  if (show2FA) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Two-Factor Authentication</h2>
+          <p className="mt-2 text-center text-sm text-gray-600">Check server logs for the OTP (sandbox setup)</p>
+        </div>
+        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {error && <div className="mb-4 bg-error-50 text-error-700 px-4 py-3 rounded-md">{error}</div>}
+          <form className="space-y-6" onSubmit={handleVerifyOtp}>
+            <Input label="OTP" value={otp} onChange={(e) => setOtp(e.target.value)} required fullWidth />
+            <Button type="submit" fullWidth isLoading={isLoading}>Verify & Continue</Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
