@@ -45,6 +45,7 @@ const userSchema = new mongoose.Schema(
       maxTicketSize: Number,
     },
 
+    twoFactorEnabled: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },

@@ -25,17 +25,23 @@ export const LoginPage: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await login(email, password, role);
-      // Initiate 2FA
-      const api = await import('../../lib/api');
-      const otpRes = await api.apiSendOtp();
+      const has2FA = await login(email, password, role);
       
-      // For demo deployment purposes: show the OTP in a toast so evaluators can use it
-      if (otpRes.data.mockOtp) {
-        toast.success(`[MOCK 2FA] Your OTP is: ${otpRes.data.mockOtp}`, { duration: 10000 });
+      if (has2FA) {
+        // User has 2FA enabled — send OTP and show verification screen
+        const api = await import('../../lib/api');
+        const otpRes = await api.apiSendOtp();
+        
+        // For demo deployment: show the OTP in a popup so evaluators can use it
+        if (otpRes.data.mockOtp) {
+          toast.success(`[MOCK 2FA] Your OTP is: ${otpRes.data.mockOtp}`, { duration: 10000 });
+        }
+        
+        setShow2FA(true);
+      } else {
+        // No 2FA — go directly to dashboard
+        navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
       }
-      
-      setShow2FA(true);
     } catch (err) {
       setError((err as Error).message);
     } finally {

@@ -21,9 +21,14 @@ export const SettingsPage: React.FC = () => {
   const handleEnable2FA = async () => {
     setLoading(true);
     try {
-      await apiSendOtp();
+      const res = await apiSendOtp();
       setOtpSent(true);
-      toast.success('OTP sent! Check the server console.');
+      // Show OTP in popup for demo deployment
+      if (res.data.mockOtp) {
+        toast.success(`[MOCK 2FA] Your OTP is: ${res.data.mockOtp}`, { duration: 10000 });
+      } else {
+        toast.success('OTP sent! Check the server console.');
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to send OTP');
     } finally {

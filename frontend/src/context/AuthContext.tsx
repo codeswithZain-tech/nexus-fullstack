@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .finally(() => setIsLoading(false));
   }, []);
 
-  const login = async (email: string, password: string, role: UserRole): Promise<void> => {
+  const login = async (email: string, password: string, role: UserRole): Promise<boolean> => {
     setIsLoading(true);
     try {
       const res = await apiLogin({ email, password });
@@ -56,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(res.data.token);
       setUser(mapApiUser(res.data));
       toast.success('Successfully logged in!');
+      return res.data.twoFactorEnabled || false;
     } catch (error: any) {
       toast.error(error?.response?.data?.message || error.message || 'Login failed');
       throw error;

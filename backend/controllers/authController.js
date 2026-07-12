@@ -48,6 +48,7 @@ export const loginUser = async (req, res, next) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      twoFactorEnabled: user.twoFactorEnabled || false,
       token: generateToken(user._id, user.role),
     });
   } catch (error) {

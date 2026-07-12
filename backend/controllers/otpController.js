@@ -41,7 +41,7 @@ export const verifyOtp = async (req, res, next) => {
     }
 
     otpStore.delete(req.user._id.toString());
-    await User.findByIdAndUpdate(req.user._id, { isVerified: true });
+    await User.findByIdAndUpdate(req.user._id, { isVerified: true, twoFactorEnabled: true });
 
     res.json({ message: "2FA verified successfully" });
   } catch (error) {
